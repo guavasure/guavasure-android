@@ -11,8 +11,6 @@ import org.json.JSONObject
 class PaymentLauncher(
     private val activity: Activity,
 ) : PaymentResultListener {
-    private var pendingNative: ((PaymentLaunchResult) -> Unit)? = null
-
     fun launch(
         request: OpenPaymentRequest,
         onResult: (PaymentLaunchResult) -> Unit,
@@ -27,20 +25,24 @@ class PaymentLauncher(
             return
         }
 
-        openCustomTab(request.url)
-        onResult(PaymentLaunchResult.BrowserOpened)
+        try {
+            openCustomTab(request.url)
+            onResult(PaymentLaunchResult.BrowserOpened)
+        } catch (_: Exception) {
+            onResult(PaymentLaunchResult.Failed)
+        }
     }
 
     private fun launchNative(
         request: OpenPaymentRequest,
         onResult: (PaymentLaunchResult) -> Unit,
     ) {
-        if (pendingNative != null) {
+        if (PaymentSessionHolder.pendingNative != null) {
             onResult(PaymentLaunchResult.NativeFailure("Payment already in progress", true))
             return
         }
 
-        pendingNative = onResult
+        PaymentSessionHolder.begin(onResult)
         val checkout = Checkout()
         checkout.setKeyID(request.key)
 
@@ -59,31 +61,47 @@ class PaymentLauncher(
             put("theme", JSONObject().put("color", "#E85A4F"))
         }
 
-        checkout.open(activity, options)
+        try {
+            checkout.open(activity, options)
+        } catch (error: Exception) {
+            PaymentSessionHolder.clear()
+            onResult(
+                PaymentLaunchResult.NativeFailure(
+                    message = error.message ?: "Failed to open payment",
+                    cancelled = false,
+                ),
+            )
+        }
     }
 
     private fun openCustomTab(url: String) {
         val uri = Uri.parse(url)
-        CustomTabsIntent.Builder()
-            .setShowTitle(true)
-            .build()
-            .launchUrl(activity, uri)
+        try {
+            CustomTabsIntent.Builder()
+                .setShowTitle(true)
+                .build()
+                .launchUrl(activity, uri)
+        } catch (_: Exception) {
+            try {
+                activity.startActivity(
+                    android.content.Intent(android.content.Intent.ACTION_VIEW, uri),
+                )
+            } catch (_: Exception) {
+                throw IllegalStateException("No browser available to open payment link")
+            }
+        }
     }
 
     override fun onPaymentSuccess(razorpayPaymentId: String?) {
-        val callback = pendingNative
-        pendingNative = null
-        callback?.invoke(
+        PaymentSessionHolder.complete(
             PaymentLaunchResult.NativeSuccess(razorpayPaymentId.orEmpty()),
         )
     }
 
     override fun onPaymentError(code: Int, description: String?) {
-        val callback = pendingNative
-        pendingNative = null
         val cancelled = code == Checkout.PAYMENT_CANCELED ||
             description?.contains("cancel", ignoreCase = true) == true
-        callback?.invoke(
+        PaymentSessionHolder.complete(
             PaymentLaunchResult.NativeFailure(
                 message = description ?: "Payment failed",
                 cancelled = cancelled,

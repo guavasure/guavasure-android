@@ -2,6 +2,7 @@ package com.guavasure.sdk
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import com.guavasure.sdk.payment.PaymentLauncher
 import com.razorpay.PaymentResultListener
 
 /**
@@ -12,6 +13,7 @@ import com.razorpay.PaymentResultListener
  * [GuavaSurePaymentHost] on your own activity).
  */
 abstract class GuavaSureEmbedActivity : AppCompatActivity(), GuavaSurePaymentHost, PaymentResultListener {
+    val paymentLauncher: PaymentLauncher by lazy { PaymentLauncher(this) }
     private var paymentListener: PaymentResultListener? = null
 
     override fun registerPaymentListener(listener: PaymentResultListener) {
@@ -19,10 +21,12 @@ abstract class GuavaSureEmbedActivity : AppCompatActivity(), GuavaSurePaymentHos
     }
 
     override fun onPaymentSuccess(razorpayPaymentId: String?) {
+        paymentLauncher.onPaymentSuccess(razorpayPaymentId)
         paymentListener?.onPaymentSuccess(razorpayPaymentId)
     }
 
     override fun onPaymentError(code: Int, description: String?) {
+        paymentLauncher.onPaymentError(code, description)
         paymentListener?.onPaymentError(code, description)
     }
 }

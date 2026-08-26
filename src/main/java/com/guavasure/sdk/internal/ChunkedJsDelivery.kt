@@ -76,6 +76,19 @@ object ChunkedJsDelivery {
         )
     }
 
+    fun signalNativePaymentEnded(webView: WebView, cancelled: Boolean) {
+        webView.evaluateJavascript(
+            """
+            (function () {
+              if (typeof window.__guavasureAbortExternalPayment === 'function') {
+                window.__guavasureAbortExternalPayment($cancelled);
+              }
+            })();
+            """.trimIndent(),
+            null,
+        )
+    }
+
     fun buildPartnerPaymentScript(
         payload: JSONObject,
     ): String {

@@ -23,7 +23,30 @@ data class GuavaSureEmbedConfig(
     val localDevHost: String? = null,
     val localDevPort: Int = 5173,
     val localDevScheme: String = "http",
+    /**
+     * When true, the SDK handles native camera bridge messages if the host app has
+     * already granted `CAMERA` runtime permission. The SDK never prompts for camera
+     * access — partners opt in and request permission in their own app flow.
+     */
+    val enableCameraCapture: Boolean = false,
 ) {
+    override fun toString(): String {
+        return "GuavaSureEmbedConfig(" +
+            "partnerId=$partnerId, " +
+            "environment=$environment, " +
+            "partnerAuthToken=${if (partnerAuthToken == null) "null" else "[REDACTED]"}, " +
+            "partnerAuthTokenProvider=${if (partnerAuthTokenProvider == null) "null" else "[REDACTED]"}, " +
+            "partnerExternalId=$partnerExternalId, " +
+            "embedBaseUrl=$embedBaseUrl, " +
+            "embedUrlOverride=$embedUrlOverride, " +
+            "platform=$platform, " +
+            "localDevHost=$localDevHost, " +
+            "localDevPort=$localDevPort, " +
+            "localDevScheme=$localDevScheme, " +
+            "enableCameraCapture=$enableCameraCapture" +
+            ")"
+    }
+
     companion object {
         const val DEFAULT_EMBED_BASE_URL = "https://embed.guavasure.com"
         const val APP_WEBVIEW_PLATFORM = "app-webview"

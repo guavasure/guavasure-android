@@ -23,6 +23,7 @@ import com.guavasure.sdk.bridge.BridgeConstants
 import com.guavasure.sdk.bridge.BridgeDispatcher
 import com.guavasure.sdk.bridge.CameraBridge
 import com.guavasure.sdk.bridge.FilePickerBridge
+import com.guavasure.sdk.internal.ChunkedJsDelivery
 import com.guavasure.sdk.payment.PaymentLaunchResult
 import com.guavasure.sdk.payment.PaymentLauncher
 import com.guavasure.sdk.security.EmbedOriginPolicy
@@ -71,8 +72,11 @@ class GuavaSureEmbedView @JvmOverloads constructor(
 
     fun bind(activity: ComponentActivity, lifecycleOwner: LifecycleOwner = activity) {
         this.activity = activity
-        paymentLauncher = PaymentLauncher(activity)
-        if (activity is GuavaSurePaymentHost) {
+        paymentLauncher = when (activity) {
+            is GuavaSureEmbedActivity -> activity.paymentLauncher
+            else -> PaymentLauncher(activity)
+        }
+        if (activity is GuavaSurePaymentHost && activity !is GuavaSureEmbedActivity) {
             activity.registerPaymentListener(paymentLauncher)
         }
         filePickerBridge = FilePickerBridge(activity, { webView }, activity.lifecycleScope)
@@ -86,13 +90,22 @@ class GuavaSureEmbedView @JvmOverloads constructor(
                     callbacks.onPaymentLinkOpened?.invoke()
                     paymentLauncher.launch(request) { result ->
                         when (result) {
-                            is PaymentLaunchResult.NativeSuccess -> reloadEmbedHome()
+                            is PaymentLaunchResult.NativeSuccess -> {
+                                // Embed keeps polling quote status — no reload needed.
+                            }
                             is PaymentLaunchResult.BrowserOpened -> {
                                 awaitingBrowserPayment = true
                                 paymentOpenedAtMs = System.currentTimeMillis()
                             }
-                            is PaymentLaunchResult.NativeFailure -> Unit
-                            PaymentLaunchResult.Failed -> Unit
+                            is PaymentLaunchResult.NativeFailure -> {
+                                ChunkedJsDelivery.signalNativePaymentEnded(
+                                    webView,
+                                    cancelled = result.cancelled,
+                                )
+                            }
+                            PaymentLaunchResult.Failed -> {
+                                ChunkedJsDelivery.signalNativePaymentEnded(webView, cancelled = true)
+                            }
                         }
                     }
                 }
@@ -148,6 +161,7 @@ class GuavaSureEmbedView @JvmOverloads constructor(
         this.config = config
         this.callbacks = callbacks
         allowedOrigins = EmbedOriginPolicy.resolveAllowedOrigins(config)
+        cameraBridge.setEnableCameraCapture(config.enableCameraCapture)
     }
 
     fun loadEmbed() {

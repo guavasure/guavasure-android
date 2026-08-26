@@ -99,9 +99,20 @@ class FilePickerBridge(
             val resolver = activity.contentResolver
             val name = queryDisplayName(uri) ?: "upload"
             val mimeType = resolver.getType(uri) ?: guessMimeType(name)
-            val bytes = resolver.openInputStream(uri)?.use { it.readBytes() }
-                ?: throw IOException("Could not read file")
-            if (bytes.size > BridgeConstants.MAX_FILE_BYTES) return null
+            val bytes = resolver.openInputStream(uri)?.use { input ->
+                val output = java.io.ByteArrayOutputStream()
+                val buffer = ByteArray(8192)
+                var total = 0
+                while (true) {
+                    val read = input.read(buffer)
+                    if (read < 0) break
+                    total += read
+                    if (total > BridgeConstants.MAX_FILE_BYTES) return@use null
+                    output.write(buffer, 0, read)
+                }
+                output.toByteArray()
+            } ?: throw IOException("Could not read file")
+            if (bytes == null) return null
             JSONObject().apply {
                 put("name", name)
                 put("mimeType", mimeType)

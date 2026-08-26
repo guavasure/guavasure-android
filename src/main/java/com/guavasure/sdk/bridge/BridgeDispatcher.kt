@@ -4,6 +4,10 @@ import com.guavasure.sdk.CollectPaymentRequest
 import com.guavasure.sdk.PartnerPaymentResult
 import com.guavasure.sdk.payment.OpenPaymentRequest
 import org.json.JSONObject
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 
 class BridgeDispatcher(
     private val callbacks: Callbacks,
@@ -76,8 +80,10 @@ class BridgeDispatcher(
 
             type == BridgeConstants.OPEN_PAYMENT -> {
                 val url = json.optString("url")
-                if (url.isBlank()) return
-                callbacks.onOpenPayment(parseOpenPayment(json, url))
+                val request = parseOpenPayment(json, url)
+                if (url.isNotBlank() || request.canOpenNativeCheckout) {
+                    callbacks.onOpenPayment(request)
+                }
             }
 
             type == BridgeConstants.GUAVASURE_PAYMENT && event == BridgeConstants.COLLECT_PAYMENT -> {
@@ -132,7 +138,7 @@ class BridgeDispatcher(
                 put("intentId", intentId)
                 put("quoteId", quoteId)
             })
-            put("timestamp", java.time.Instant.now().toString())
+            put("timestamp", isoTimestampNow())
         }
         return com.guavasure.sdk.internal.ChunkedJsDelivery.buildPartnerPaymentScript(payload)
     }
@@ -145,8 +151,18 @@ class BridgeDispatcher(
                 put("intentId", intentId)
                 put("quoteId", quoteId)
             })
-            put("timestamp", java.time.Instant.now().toString())
+            put("timestamp", isoTimestampNow())
         }
         return com.guavasure.sdk.internal.ChunkedJsDelivery.buildPartnerPaymentScript(payload)
+    }
+
+    private fun isoTimestampNow(): String {
+        return UTC_TIMESTAMP_FORMAT.format(Date())
+    }
+
+    companion object {
+        private val UTC_TIMESTAMP_FORMAT = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).apply {
+            timeZone = TimeZone.getTimeZone("UTC")
+        }
     }
 }

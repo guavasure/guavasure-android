@@ -10,9 +10,9 @@ import android.webkit.WebView
 import androidx.activity.ComponentActivity
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
-import com.guavasure.sdk.internal.ChunkedJsDelivery
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -20,27 +20,29 @@ import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.io.File
 
+/**
+ * Native camera bridge for [capture-photo] / [camera-permission] embed messages.
+ *
+ * Never prompts for camera permission — partners must declare `CAMERA` in their
+ * manifest and request runtime access before capture will work. When disabled or
+ * permission is missing, the embed falls back to file upload.
+ */
 class CameraBridge(
     private val activity: ComponentActivity,
     private val webViewProvider: () -> WebView,
     private val scope: CoroutineScope,
+    private var enableCameraCapture: Boolean = false,
 ) {
-    private var pendingPermissionRequestId: String? = null
     private var pendingCaptureRequestId: String? = null
     private var captureOutputUri: Uri? = null
 
-    private lateinit var permissionLauncher: ActivityResultLauncher<String>
     private lateinit var captureLauncher: ActivityResultLauncher<Uri>
 
-    fun register() {
-        permissionLauncher = activity.registerForActivityResult(
-            ActivityResultContracts.RequestPermission(),
-        ) { granted ->
-            val requestId = pendingPermissionRequestId ?: return@registerForActivityResult
-            pendingPermissionRequestId = null
-            resolvePermission(requestId, granted)
-        }
+    fun setEnableCameraCapture(enabled: Boolean) {
+        enableCameraCapture = enabled
+    }
 
+    fun register() {
         captureLauncher = activity.registerForActivityResult(
             ActivityResultContracts.TakePicture(),
         ) { success ->
@@ -57,27 +59,22 @@ class CameraBridge(
     }
 
     fun handlePermissionRequest(requestId: String) {
-        val granted = ContextCompat.checkSelfPermission(
-            activity,
-            Manifest.permission.CAMERA,
-        ) == PackageManager.PERMISSION_GRANTED
-
-        if (granted) {
-            resolvePermission(requestId, true)
+        if (!enableCameraCapture) {
+            resolvePermission(requestId, false)
             return
         }
 
-        pendingPermissionRequestId = requestId
-        permissionLauncher.launch(Manifest.permission.CAMERA)
+        val granted = hasCameraPermission()
+        resolvePermission(requestId, granted)
     }
 
     fun handleCaptureRequest(requestId: String) {
-        val granted = ContextCompat.checkSelfPermission(
-            activity,
-            Manifest.permission.CAMERA,
-        ) == PackageManager.PERMISSION_GRANTED
+        if (!enableCameraCapture) {
+            resolveCaptureError(requestId, "permission_denied")
+            return
+        }
 
-        if (!granted) {
+        if (!hasCameraPermission()) {
             resolveCaptureError(requestId, "permission_denied")
             return
         }
@@ -100,8 +97,24 @@ class CameraBridge(
         activity.startActivity(intent)
     }
 
+    private fun hasCameraPermission(): Boolean {
+        return ContextCompat.checkSelfPermission(
+            activity,
+            Manifest.permission.CAMERA,
+        ) == PackageManager.PERMISSION_GRANTED
+    }
+
     private fun resolvePermission(requestId: String, granted: Boolean) {
-        val outcome = if (granted) "granted" else "permission_denied"
+        val outcome = when {
+            granted -> "granted"
+            enableCameraCapture &&
+                !hasCameraPermission() &&
+                !ActivityCompat.shouldShowRequestPermissionRationale(
+                    activity,
+                    Manifest.permission.CAMERA,
+                ) -> "permission_permanently_denied"
+            else -> "permission_denied"
+        }
         val encodedId = JSONObject.quote(requestId)
         val payload = JSONObject().put("outcome", outcome)
         webViewProvider().evaluateJavascript(
@@ -128,7 +141,7 @@ class CameraBridge(
             val encodedId = JSONObject.quote(requestId)
             if (payload == null) {
                 webView.evaluateJavascript(
-                    "window.__guavasureResolveCameraCapture($encodedId, null);",
+                    "window.__guavasureResolveCameraCapture($encodedId, ${JSONObject().put("error", "error")});",
                     null,
                 )
                 return@launch

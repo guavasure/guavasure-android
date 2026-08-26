@@ -45,7 +45,7 @@ dependencies {
 }
 
 group = "com.guavasure.sdk"
-version = "1.0.0"
+version = "1.0.1"
 
 afterEvaluate {
     publishing {
@@ -54,7 +54,7 @@ afterEvaluate {
                 from(components["release"])
                 groupId = "com.guavasure.sdk"
                 artifactId = "guavasure-android"
-                version = "1.0.0"
+                version = "1.0.1"
             }
         }
     }
