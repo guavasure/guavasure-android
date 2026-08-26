@@ -20,6 +20,9 @@ object GuavaSureUrlBuilder {
         if (externalId.isNotEmpty()) {
             params["partner-external-id"] = externalId
         }
+        if (config.enableCameraCapture) {
+            params["enable-camera-capture"] = "true"
+        }
 
         val localHost = config.localDevHost?.trim().orEmpty()
         if (localHost.isNotEmpty()) {
