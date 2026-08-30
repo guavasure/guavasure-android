@@ -8,7 +8,7 @@ import com.razorpay.PaymentResultListener
 /**
  * Optional base activity that forwards Razorpay callbacks to [GuavaSureEmbedView].
  *
- * Razorpay Android SDK 1.6+ delivers results on the host Activity — not via
+ * Razorpay Android SDK 1.6+ delivers results on the host Activity - not via
  * `Checkout.handleActivityResult`. Extend this class (or implement
  * [GuavaSurePaymentHost] on your own activity).
  */

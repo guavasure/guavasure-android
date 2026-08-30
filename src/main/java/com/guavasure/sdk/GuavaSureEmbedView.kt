@@ -7,7 +7,6 @@ import android.util.AttributeSet
 import android.view.Gravity
 import android.webkit.JavascriptInterface
 import android.webkit.WebResourceRequest
-import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.FrameLayout
@@ -30,7 +29,7 @@ import com.guavasure.sdk.security.EmbedOriginPolicy
 import kotlinx.coroutines.launch
 
 /**
- * Drop-in GuavaSure embed WebView — mirrors [guavasure_flutter] behavior.
+ * Drop-in GuavaSure embed WebView - mirrors [guavasure_flutter] behavior.
  *
  * Register in a [ComponentActivity], call [bind], then [loadEmbed].
  */
@@ -39,7 +38,7 @@ class GuavaSureEmbedView @JvmOverloads constructor(
     attrs: AttributeSet? = null,
 ) : FrameLayout(context, attrs) {
 
-    private val webView = WebView(context)
+    private var webView = WebView(context)
     private val progressBar = ProgressBar(context, null, android.R.attr.progressBarStyleHorizontal)
 
     private var activity: ComponentActivity? = null
@@ -91,7 +90,7 @@ class GuavaSureEmbedView @JvmOverloads constructor(
                     paymentLauncher.launch(request) { result ->
                         when (result) {
                             is PaymentLaunchResult.NativeSuccess -> {
-                                // Embed keeps polling quote status — no reload needed.
+                                // Embed keeps polling quote status - no reload needed.
                             }
                             is PaymentLaunchResult.BrowserOpened -> {
                                 awaitingBrowserPayment = true
@@ -131,6 +130,7 @@ class GuavaSureEmbedView @JvmOverloads constructor(
                 }
 
                 override fun onLogout() {
+                    GuavaSureEmbedWarmup.cancel()
                     activity?.lifecycleScope?.launch {
                         callbacks.onLogout?.invoke()
                     }
@@ -176,6 +176,15 @@ class GuavaSureEmbedView @JvmOverloads constructor(
 
         activity.lifecycleScope.launch {
             try {
+                val warmed = GuavaSureEmbedWarmup.claimIfMatching(config)
+                if (warmed != null) {
+                    warmed.onLoadError = { message ->
+                        callbacks.onLoadError?.invoke(message)
+                    }
+                    adoptWarmupSession(warmed)
+                    return@launch
+                }
+
                 val token = resolvePartnerAuthToken(config)
                 val url = GuavaSureUrlBuilder.buildEmbedUrl(config, token)
                 webView.loadUrl(url)
@@ -201,13 +210,40 @@ class GuavaSureEmbedView @JvmOverloads constructor(
         return config.partnerAuthToken
     }
 
+    private fun adoptWarmupSession(warmed: GuavaSureEmbedWarmupSession) {
+        swapToWebView(warmed.webView)
+        bridgeOriginTrusted = warmed.bridgeOriginTrusted
+        if (warmed.loadFinished) {
+            progressBar.visibility = GONE
+        }
+        val queued = warmed.attachDispatcher { message ->
+            if (bridgeOriginTrusted) {
+                bridgeDispatcher.dispatch(message)
+            }
+        }
+        for (message in queued) {
+            if (bridgeOriginTrusted) {
+                bridgeDispatcher.dispatch(message)
+            }
+        }
+    }
+
+    private fun swapToWebView(newWebView: WebView) {
+        if (webView === newWebView) return
+        removeView(webView)
+        webView.destroy()
+        (newWebView.parent as? android.view.ViewGroup)?.removeView(newWebView)
+        webView = newWebView
+        addView(webView, 0, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
+        configureWebView()
+    }
+
     private fun handleResumeFromBrowserPayment() {
         if (!awaitingBrowserPayment) return
 
         val elapsed = System.currentTimeMillis() - paymentOpenedAtMs
         if (elapsed < 2000) return
 
-        // Do NOT full-reload — embed keeps polling quote status in the background.
         awaitingBrowserPayment = false
     }
 
@@ -247,17 +283,9 @@ class GuavaSureEmbedView @JvmOverloads constructor(
     }
 
     private fun configureWebView() {
-        webView.settings.apply {
-            javaScriptEnabled = true
-            domStorageEnabled = true
-            databaseEnabled = true
-            mediaPlaybackRequiresUserGesture = false
-            mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
-            allowFileAccess = true
-            allowContentAccess = true
-            userAgentString = CHROME_MOBILE_USER_AGENT
-        }
+        GuavaSureEmbedWarmup.applyBaseSettings(webView)
 
+        webView.removeJavascriptInterface(BridgeConstants.CHANNEL_NAME)
         webView.addJavascriptInterface(
             GuavasureBridgeJsInterface { message ->
                 if (!bridgeOriginTrusted) return@GuavasureBridgeJsInterface
@@ -333,8 +361,17 @@ class GuavaSureEmbedView @JvmOverloads constructor(
     }
 
     companion object {
-        private const val CHROME_MOBILE_USER_AGENT =
-            "Mozilla/5.0 (Linux; Android 13; Mobile) AppleWebKit/537.36 " +
-                "(KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36"
+        /**
+         * Optional preload from a previous screen. Use the same [GuavaSureEmbedConfig]
+         * as [configure] / [loadEmbed].
+         */
+        fun warmup(activity: ComponentActivity, config: GuavaSureEmbedConfig) {
+            GuavaSureEmbedWarmup.start(activity, config)
+        }
+
+        /** Clears any warmup session (for example on partner logout). */
+        fun cancelWarmup() {
+            GuavaSureEmbedWarmup.cancel()
+        }
     }
 }

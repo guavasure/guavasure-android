@@ -8,7 +8,7 @@ enum class GuavaSureEnvironment {
 /**
  * Configuration for [GuavaSureEmbedView].
  *
- * @param partnerAuthTokenProvider Preferred — mint short-lived JWTs from your backend.
+ * @param partnerAuthTokenProvider Preferred - mint short-lived JWTs from your backend.
  * @param partnerAuthToken Static JWT fallback (dev only).
  */
 data class GuavaSureEmbedConfig(
@@ -26,7 +26,7 @@ data class GuavaSureEmbedConfig(
     /**
      * When true, the SDK handles native camera bridge messages if the host app has
      * already granted `CAMERA` runtime permission. The SDK never prompts for camera
-     * access — partners opt in and request permission in their own app flow.
+     * access - partners opt in and request permission in their own app flow.
      */
     val enableCameraCapture: Boolean = false,
 ) {

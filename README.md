@@ -2,7 +2,7 @@
 
 Native Android library that embeds the hosted GuavaSure insurance flow in a WebView and implements `GuavasureBridge` for native Razorpay Checkout, file pick, camera capture, and partner auth.
 
-**Full integration guide:** [partners.guavasure.com — Android SDK](https://partners.guavasure.com/integration/docs/integrations/android-sdk)
+**Full integration guide:** [partners.guavasure.com - Android SDK](https://partners.guavasure.com/integration/docs/integrations/android-sdk)
 
 ## Features
 
@@ -19,6 +19,7 @@ Native Android library that embeds the hosted GuavaSure insurance flow in a WebV
 | Logout / go-back                    | ✅ callbacks                        |
 | Partner-collected payment           | ✅ optional handler                 |
 | Embed origin + payment URL security | ✅                                  |
+| Optional embed warmup               | ✅ `GuavaSureEmbedView.warmup`      |
 
 ## Quick start
 
@@ -28,7 +29,7 @@ Native Android library that embeds the hosted GuavaSure insurance flow in a WebV
 
 ```kotlin
 dependencies {
-    implementation("com.github.guavasure:guavasure-android:1.0.1")
+    implementation("com.github.guavasure:guavasure-android:1.0.4")
 }
 ```
 
