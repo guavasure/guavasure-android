@@ -29,6 +29,11 @@ data class GuavaSureEmbedConfig(
      * access - partners opt in and request permission in their own app flow.
      */
     val enableCameraCapture: Boolean = false,
+    /**
+     * Alternate partner customization from Embed → Theme configs.
+     * When set, the embed URL includes `theme-config-id`. Unset uses the default.
+     */
+    val themeConfigId: String? = null,
 ) {
     override fun toString(): String {
         return "GuavaSureEmbedConfig(" +
@@ -43,7 +48,8 @@ data class GuavaSureEmbedConfig(
             "localDevHost=$localDevHost, " +
             "localDevPort=$localDevPort, " +
             "localDevScheme=$localDevScheme, " +
-            "enableCameraCapture=$enableCameraCapture" +
+            "enableCameraCapture=$enableCameraCapture, " +
+            "themeConfigId=$themeConfigId" +
             ")"
     }
 

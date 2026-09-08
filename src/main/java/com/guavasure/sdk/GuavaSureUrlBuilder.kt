@@ -7,6 +7,7 @@ object GuavaSureUrlBuilder {
         config.embedUrlOverride?.takeIf { it.isNotBlank() }?.let { return it }
 
         val externalId = config.partnerExternalId?.trim().orEmpty()
+        val themeConfigId = config.themeConfigId?.trim().orEmpty()
         val params = linkedMapOf(
             "partner" to config.partnerId,
             "platform" to config.platform,
@@ -19,6 +20,9 @@ object GuavaSureUrlBuilder {
         }
         if (externalId.isNotEmpty()) {
             params["partner-external-id"] = externalId
+        }
+        if (themeConfigId.isNotEmpty()) {
+            params["theme-config-id"] = themeConfigId
         }
         if (config.enableCameraCapture) {
             params["enable-camera-capture"] = "true"

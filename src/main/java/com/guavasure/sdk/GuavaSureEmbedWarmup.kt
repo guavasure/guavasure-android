@@ -31,6 +31,7 @@ internal object GuavaSureEmbedWarmupKey {
         val authToken = config.partnerAuthToken?.trim().orEmpty()
         val env = if (config.environment == GuavaSureEnvironment.SANDBOX) "sandbox" else "production"
         val camera = if (config.enableCameraCapture) "1" else "0"
+        val themeConfigId = config.themeConfigId?.trim().orEmpty()
         return listOf(
             config.partnerId,
             env,
@@ -39,6 +40,7 @@ internal object GuavaSureEmbedWarmupKey {
             externalId,
             authToken,
             camera,
+            themeConfigId,
         ).joinToString("|")
     }
 }
