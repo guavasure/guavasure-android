@@ -34,6 +34,11 @@ data class GuavaSureEmbedConfig(
      * When set, the embed URL includes `theme-config-id`. Unset uses the default.
      */
     val themeConfigId: String? = null,
+    /**
+     * When true, the embed URL includes `claim-mode=true` so home is a
+     * claims-focused Policy Details screen instead of the full portal dashboard.
+     */
+    val claimMode: Boolean = false,
 ) {
     override fun toString(): String {
         return "GuavaSureEmbedConfig(" +
@@ -49,7 +54,8 @@ data class GuavaSureEmbedConfig(
             "localDevPort=$localDevPort, " +
             "localDevScheme=$localDevScheme, " +
             "enableCameraCapture=$enableCameraCapture, " +
-            "themeConfigId=$themeConfigId" +
+            "themeConfigId=$themeConfigId, " +
+            "claimMode=$claimMode" +
             ")"
     }
 

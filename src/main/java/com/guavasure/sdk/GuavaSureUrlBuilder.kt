@@ -27,6 +27,9 @@ object GuavaSureUrlBuilder {
         if (config.enableCameraCapture) {
             params["enable-camera-capture"] = "true"
         }
+        if (config.claimMode) {
+            params["claim-mode"] = "true"
+        }
 
         val localHost = config.localDevHost?.trim().orEmpty()
         if (localHost.isNotEmpty()) {

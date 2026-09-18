@@ -88,6 +88,7 @@ class InsuranceActivity : GuavaSureEmbedActivity() {
                 partnerAuthTokenProvider = {
                     yourBackend.mintCustomerAuthToken(userId)
                 },
+                // Optional: claimMode = true for Policy Details home
             ),
             callbacks = GuavaSureEmbedCallbacks(
                 onLogout = { finish() },
