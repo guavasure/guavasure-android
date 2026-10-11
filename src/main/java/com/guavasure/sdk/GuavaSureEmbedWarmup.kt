@@ -19,6 +19,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 internal object GuavaSureEmbedWarmupKey {
+    @Suppress("DEPRECATION")
     fun build(config: GuavaSureEmbedConfig): String {
         val override = config.embedUrlOverride?.trim().orEmpty()
         val localHost = config.localDevHost?.trim().orEmpty()
@@ -239,6 +240,7 @@ internal object GuavaSureEmbedWarmup {
         }
     }
 
+    @Suppress("DEPRECATION")
     private suspend fun resolvePartnerAuthToken(config: GuavaSureEmbedConfig): String? {
         config.partnerAuthTokenProvider?.let { return it() }
         return config.partnerAuthToken

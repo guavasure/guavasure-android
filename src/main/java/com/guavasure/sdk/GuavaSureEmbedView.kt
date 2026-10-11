@@ -205,6 +205,7 @@ class GuavaSureEmbedView @JvmOverloads constructor(
         }
     }
 
+    @Suppress("DEPRECATION")
     private suspend fun resolvePartnerAuthToken(config: GuavaSureEmbedConfig): String? {
         config.partnerAuthTokenProvider?.let { return it() }
         return config.partnerAuthToken

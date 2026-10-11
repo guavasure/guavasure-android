@@ -9,11 +9,12 @@ enum class GuavaSureEnvironment {
  * Configuration for [GuavaSureEmbedView].
  *
  * @param partnerAuthTokenProvider Preferred - mint short-lived JWTs from your backend.
- * @param partnerAuthToken Static JWT fallback (dev only).
+ * @param partnerAuthToken Deprecated static JWT fallback. Use [partnerAuthTokenProvider].
  */
 data class GuavaSureEmbedConfig(
     val partnerId: String,
     val environment: GuavaSureEnvironment = GuavaSureEnvironment.PRODUCTION,
+    @Deprecated("Use partnerAuthTokenProvider instead. Static tokens are one-use and short-lived; the SDK will not mint a fresh JWT on warmup or reload.")
     val partnerAuthToken: String? = null,
     val partnerAuthTokenProvider: (suspend () -> String?)? = null,
     val partnerExternalId: String? = null,
@@ -40,6 +41,7 @@ data class GuavaSureEmbedConfig(
      */
     val claimMode: Boolean = false,
 ) {
+    @Suppress("DEPRECATION")
     override fun toString(): String {
         return "GuavaSureEmbedConfig(" +
             "partnerId=$partnerId, " +
