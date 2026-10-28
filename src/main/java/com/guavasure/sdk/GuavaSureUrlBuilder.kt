@@ -20,6 +20,9 @@ object GuavaSureUrlBuilder {
         }
         if (externalId.isNotEmpty()) {
             params["partner-external-id"] = externalId
+            if (!config.lockPet) {
+                params["partner-pet-lock"] = "false"
+            }
         }
         if (themeConfigId.isNotEmpty()) {
             params["theme-config-id"] = themeConfigId
@@ -30,6 +33,7 @@ object GuavaSureUrlBuilder {
         if (config.claimMode) {
             params["claim-mode"] = "true"
         }
+        config.theme?.let { params["theme"] = it.param }
 
         val localHost = config.localDevHost?.trim().orEmpty()
         if (localHost.isNotEmpty()) {

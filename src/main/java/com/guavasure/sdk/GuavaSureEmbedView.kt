@@ -162,6 +162,12 @@ class GuavaSureEmbedView @JvmOverloads constructor(
         this.callbacks = callbacks
         allowedOrigins = EmbedOriginPolicy.resolveAllowedOrigins(config)
         cameraBridge.setEnableCameraCapture(config.enableCameraCapture)
+        // Avoid a white flash before the embed paints; the chrome bridge then
+        // switches to the page's real background.
+        config.theme?.let {
+            setBackgroundColor(it.initialBackground)
+            webView.setBackgroundColor(it.initialBackground)
+        }
     }
 
     fun loadEmbed() {

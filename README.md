@@ -29,7 +29,7 @@ Native Android library that embeds the hosted GuavaSure insurance flow in a WebV
 
 ```kotlin
 dependencies {
-    implementation("com.github.guavasure:guavasure-android:1.0.4")
+    implementation("com.github.guavasure:guavasure-android:1.0.8")
 }
 ```
 

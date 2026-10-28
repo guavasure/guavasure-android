@@ -6,6 +6,18 @@ enum class GuavaSureEnvironment {
 }
 
 /**
+ * Embed colour scheme, sent as the `theme` URL param.
+ *
+ * [DARK] uses the partner's dark theme when GuavaSure has enabled one for the
+ * partner and it is switched on in the Partner Dashboard; otherwise the embed
+ * stays light.
+ */
+enum class GuavaSureTheme(internal val param: String, internal val initialBackground: Int) {
+    LIGHT("light", 0xFFFFFFFF.toInt()),
+    DARK("dark", 0xFF121212.toInt()),
+}
+
+/**
  * Configuration for [GuavaSureEmbedView].
  *
  * @param partnerAuthTokenProvider Preferred - mint short-lived JWTs from your backend.
@@ -40,6 +52,18 @@ data class GuavaSureEmbedConfig(
      * claims-focused Policy Details screen instead of the full portal dashboard.
      */
     val claimMode: Boolean = false,
+    /**
+     * Whether [partnerExternalId] locks the embed to that pet. When false, the
+     * embed URL includes `partner-pet-lock=false`: the pet is selected initially,
+     * other pets stay visible and the customer can switch. Ignored when
+     * [partnerExternalId] is unset.
+     */
+    val lockPet: Boolean = true,
+    /**
+     * Embed colour scheme (`theme` URL param). Pass [GuavaSureTheme.DARK] when your app is
+     * in dark mode. Unset sends no param and the embed shows the light theme.
+     */
+    val theme: GuavaSureTheme? = null,
 ) {
     @Suppress("DEPRECATION")
     override fun toString(): String {
@@ -57,7 +81,9 @@ data class GuavaSureEmbedConfig(
             "localDevScheme=$localDevScheme, " +
             "enableCameraCapture=$enableCameraCapture, " +
             "themeConfigId=$themeConfigId, " +
-            "claimMode=$claimMode" +
+            "claimMode=$claimMode, " +
+            "lockPet=$lockPet, " +
+            "theme=$theme" +
             ")"
     }
 

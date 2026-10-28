@@ -34,6 +34,8 @@ internal object GuavaSureEmbedWarmupKey {
         val camera = if (config.enableCameraCapture) "1" else "0"
         val themeConfigId = config.themeConfigId?.trim().orEmpty()
         val claimMode = if (config.claimMode) "1" else "0"
+        val lockPet = if (config.lockPet) "1" else "0"
+        val theme = config.theme?.param.orEmpty()
         return listOf(
             config.partnerId,
             env,
@@ -44,6 +46,8 @@ internal object GuavaSureEmbedWarmupKey {
             camera,
             themeConfigId,
             claimMode,
+            lockPet,
+            theme,
         ).joinToString("|")
     }
 }
@@ -108,6 +112,7 @@ internal object GuavaSureEmbedWarmup {
         )
         val webView = WebView(themedContext)
         applyBaseSettings(webView)
+        config.theme?.let { webView.setBackgroundColor(it.initialBackground) }
 
         val hostContainer = FrameLayout(activity).apply {
             layoutParams = FrameLayout.LayoutParams(1, 1)
